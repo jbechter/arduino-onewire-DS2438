@@ -53,7 +53,7 @@ void DS2438::update() {
         }
     }
     if (_mode & DS2438_MODE_CHB) {
-        boolean doTemperature = _mode & DS2438_MODE_TEMPERATURE & !(_mode & DS2438_MODE_CHA);
+        boolean doTemperature = _mode & DS2438_MODE_TEMPERATURE && !(_mode & DS2438_MODE_CHA);
         if (!startConversion(DS2438_CHB, doTemperature)) {
             return;
         }
