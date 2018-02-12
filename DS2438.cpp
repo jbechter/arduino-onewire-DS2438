@@ -18,18 +18,36 @@
 
 #include "DS2438.h"
 
+DS2438::DS2438(OneWire *ow) {
+    _ow = ow;
+};
+
 DS2438::DS2438(OneWire *ow, uint8_t *address) {
     _ow = ow;
     _address = address;
 };
 
 void DS2438::begin(uint8_t mode) {
+    uint8_t addr[8];
+
     _mode = mode & (DS2438_MODE_CHA | DS2438_MODE_CHB | DS2438_MODE_TEMPERATURE);
     _temperature = 0;
     _voltageA = 0.0;
     _voltageB = 0.0;
     _error = true;
     _timestamp = 0;
+    waitForConversion = true;
+    while (_ow->search(addr)) {
+        if (addr[0] == 0x26) {
+            _address = addr;
+            break;
+        }
+    }
+}
+
+void DS2438::getAddress(uint8_t *addr) {
+    addr = _address;
+}
 }
 
 void DS2438::update() {

@@ -42,8 +42,10 @@
 
 class DS2438 {
     public:
+        DS2438(OneWire *ow);
         DS2438(OneWire *ow, uint8_t *address);
         void begin(uint8_t mode=(DS2438_MODE_CHA | DS2438_MODE_CHB | DS2438_MODE_TEMPERATURE));
+        void getAddress(uint8_t *addr);
         void update();
         double getTemperature();
         float getVoltage(int channel=DS2438_CHA);
