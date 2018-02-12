@@ -64,6 +64,8 @@ class DS2438 {
         boolean selectChannel(int channel);
         void writePageZero(uint8_t *data);
         boolean readPageZero(uint8_t *data);
+        double calculateTemperature(uint8_t *data);
+        double calculateVoltage(uint8_t *data);
 };
 
 #endif

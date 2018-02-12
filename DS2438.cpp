@@ -64,10 +64,10 @@ void DS2438::update() {
         if (!readPageZero(data))
             return;
         if (doTemperature) {
-            _temperature = (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
+            _temperature = calculateTemperature(data);
         }
         if (_mode & DS2438_MODE_CHA) {
-            _voltageA = (((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0;
+            _voltageA = calculateVoltage(data);
         }
     }
     if (_mode & DS2438_MODE_CHB) {
@@ -78,11 +78,19 @@ void DS2438::update() {
         if (!readPageZero(data))
             return;
         if (doTemperature) {
-            _temperature = (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
+            _temperature = calculateTemperature(data);
         }
-        _voltageB = (((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0;
+        _voltageB = calculateVoltage(data);
     }
     _error = false;
+}
+
+double DS2438::calculateTemperature(uint8_t *data) {
+    return (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
+}
+
+double DS2438::calculateVoltage(uint8_t *data) {
+    return (double)((((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0);
 }
 
 double DS2438::getTemperature() {
