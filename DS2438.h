@@ -51,6 +51,9 @@ class DS2438 {
         float getVoltage(int channel=DS2438_CHA);
         boolean isError();
         unsigned long getTimestamp();
+        void setWaitForConversion(bool);
+        bool getWaitForConversion();
+        boolean startConversion(int channel, boolean doTemperature);
     private:
         OneWire *_ow;
         uint8_t *_address;
@@ -60,7 +63,7 @@ class DS2438 {
         float _voltageB;
         unsigned long _timestamp;
         boolean _error;
-        boolean startConversion(int channel, boolean doTemperature);
+        bool waitForConversion;
         boolean selectChannel(int channel);
         void writePageZero(uint8_t *data);
         boolean readPageZero(uint8_t *data);
