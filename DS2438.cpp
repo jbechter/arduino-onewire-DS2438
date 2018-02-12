@@ -18,18 +18,45 @@
 
 #include "DS2438.h"
 
+DS2438::DS2438(OneWire *ow) {
+    _ow = ow;
+};
+
 DS2438::DS2438(OneWire *ow, uint8_t *address) {
     _ow = ow;
     _address = address;
 };
 
 void DS2438::begin(uint8_t mode) {
+    uint8_t addr[8];
+
     _mode = mode & (DS2438_MODE_CHA | DS2438_MODE_CHB | DS2438_MODE_TEMPERATURE);
     _temperature = 0;
     _voltageA = 0.0;
     _voltageB = 0.0;
     _error = true;
     _timestamp = 0;
+    waitForConversion = true;
+    while (_ow->search(addr)) {
+        if (addr[0] == 0x26) {
+            _address = addr;
+            break;
+        }
+    }
+}
+
+void DS2438::getAddress(uint8_t *addr) {
+    addr = _address;
+}
+
+void DS2438::setWaitForConversion(bool flag)
+{
+    waitForConversion = flag;
+}
+
+bool DS2438::getWaitForConversion()
+{
+    return waitForConversion;
 }
 
 void DS2438::update() {
@@ -46,10 +73,10 @@ void DS2438::update() {
         if (!readPageZero(data))
             return;
         if (doTemperature) {
-            _temperature = (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
+            _temperature = calculateTemperature(data);
         }
         if (_mode & DS2438_MODE_CHA) {
-            _voltageA = (((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0;
+            _voltageA = calculateVoltage(data);
         }
     }
     if (_mode & DS2438_MODE_CHB) {
@@ -60,18 +87,42 @@ void DS2438::update() {
         if (!readPageZero(data))
             return;
         if (doTemperature) {
-            _temperature = (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
+            _temperature = calculateTemperature(data);
         }
-        _voltageB = (((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0;
+        _voltageB = calculateVoltage(data);
     }
     _error = false;
 }
 
+double DS2438::calculateTemperature(uint8_t *data) {
+    return (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
+}
+
+double DS2438::calculateVoltage(uint8_t *data) {
+    return (double)((((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0);
+}
+
 double DS2438::getTemperature() {
+    if (!waitForConversion) {
+        uint8_t data[9];
+        if (!readPageZero(data))
+            return 0.0;
+        _temperature = calculateTemperature(data);
+    }
     return _temperature;
 }
 
 float DS2438::getVoltage(int channel) {
+    if (!waitForConversion) {
+        uint8_t data[9];
+        if (!readPageZero(data))
+            return 0.0;
+        if (channel == DS2438_CHA)
+            _voltageA = calculateVoltage(data);
+        else if (channel == DS2438_CHB)
+            _voltageB = calculateVoltage(data);
+        else return 0.0;
+    }
     if (channel == DS2438_CHA) {
         return _voltageA;
     } else if (channel == DS2438_CHB) {
@@ -101,6 +152,8 @@ boolean DS2438::startConversion(int channel, boolean doTemperature) {
         _ow->select(_address);
     }
     _ow->write(DS2438_VOLTAGE_CONVERSION_COMMAND, 0);
+    if (!waitForConversion)
+        return true;
     delay(DS2438_VOLTAGE_CONVERSION_DELAY);
     return true;
 }
